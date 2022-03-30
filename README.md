@@ -10,7 +10,7 @@
 Hey, this is just a little program I wrote to track VicRoads appointments, because of how messed up their backlog is.
 Don't be surprised if this stops working, and I probably won't update it after I'm done with it.
 
-CONFIG OPTIONS (vicroadsquery.config.json)
+## CONFIG OPTIONS (vicroadsquery.config.json)
 
 - LogFilePath : string (default: "vicroadsquery.log.txt")
     - Path to the file which VicRoadsQuery will log all console messages to, as a rolling append.
