@@ -151,9 +151,7 @@ public class Program
                     retryAttempts++;
                     Log(
                         $"ERROR: Non successful response received. Retrying in 5 seconds (Attempt {retryAttempts}/{Config.MaxRetryAttempts}).");
-                    await Task.Delay(5000);
-                    if (retryAttempts >= 5)
-                        await DoWarningAlert();
+                    await Task.Delay(Config.RetryDelayMs);
                     continue;
                 }
 
@@ -229,12 +227,8 @@ public class Program
                             default:
                                 retryAttempts++;
                                 Log($"Invalid response [code: {apptsRaw.Response}]. Resetting. (Attempt {retryAttempts}/{Config.MaxRetryAttempts}).");
-                                if (retryAttempts >= 5)
-                                    await DoWarningAlert();
-
                                 looping = false;
                                 break;
-                            
                         }
 
                         if (!success)
@@ -303,7 +297,7 @@ public class Program
 
 
                         if (successAlert)
-                            await DoSuccessAlert();
+                            await DoAlert(Config.AlertBeep);
                         else
                             Log($"No viable appointments found (out of {appointmentsTotal}).");
 
@@ -315,8 +309,9 @@ public class Program
         catch (Exception ex)
         {
             Log("ERROR: " + ex);
-            await DoWarningAlert();
         }
+        
+        await DoAlert(Config.WarningBeep);
     }
 
     static async Task UpdateTitleLoop()
@@ -346,26 +341,21 @@ public class Program
         return dateTime;
     }
 
-    static async Task DoWarningAlert()
+    static async Task DoAlert(BeepInfo info)
     {
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < info.Repeats; i++)
         {
-            Console.Beep(250, 600);
-            await Task.Delay(100);
-        }
-    }
-    
-    static async Task DoSuccessAlert()
-    {
-        for (int i = 0; i < 5; i++)
-        {
-            for (int j = 0; j < 3; j++)
-                Console.Beep(1500, 50);
+            for (int j = 0; j < info.Burst; j++)
+            {
+                Console.Beep(info.Frequency, info.DurationMs);
+                await Task.Delay(info.BurstDelayMs);
+            }
 
-            await Task.Delay(500);
+            await Task.Delay(info.RepeatDelayMs);
         }
     }
-    
+
+
     static string GetStringInput(string message)
     {
         while (true)

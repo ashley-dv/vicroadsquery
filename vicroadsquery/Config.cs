@@ -13,6 +13,7 @@ public class Config
     
     public string LogFilePath = "vicroadsquery.log.txt";
     public int QueryDelayMs = 30000;
+    public int RetryDelayMs = 5000;
     public int MaxRetryAttempts = 5;
     public bool PrintResponseSummaries = false;
     public string LicenseNumber = "012345678";
@@ -25,6 +26,9 @@ public class Config
     public bool TimeRangeExclusive = true;
 
     public string[] OfficesToQuery = Array.Empty<string>();
+
+    public BeepInfo AlertBeep = new BeepInfo(5, 1500, 50, 3, 250, 0);
+    public BeepInfo WarningBeep = new BeepInfo(5, 500, 250, 1, 100, 0);
 
     private static Config GetDefaults()
     {

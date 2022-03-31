@@ -17,9 +17,6 @@
 
     <ItemGroup>
       <None Remove="readme.txt" />
-      <Content Include="readme.txt">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
     </ItemGroup>
 
 </Project>

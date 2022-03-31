@@ -47,3 +47,29 @@ public class VicRoadsOffice
     public double Latitude;
     public double Longitude;
 }
+
+public class BeepInfo
+{
+    public int Repeats;
+    public int Frequency;
+    public int DurationMs;
+    public int Burst;
+
+    public int RepeatDelayMs;
+    public int BurstDelayMs;
+
+    public BeepInfo()
+    {
+        
+    }
+
+    public BeepInfo(int reps, int freq, int durMs, int burst, int repDelayMs, int burstDelayMs)
+    {
+        Repeats = reps;
+        Frequency = freq;
+        DurationMs = durMs;
+        Burst = burst;
+        RepeatDelayMs = repDelayMs;
+        BurstDelayMs = burstDelayMs;
+    }
+}
