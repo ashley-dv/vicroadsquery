@@ -21,9 +21,17 @@ public class Program
         try
         {
             Log($"Attempting to read config...");
-            Config = Config.Load();
-            Log($"Config successfully loaded.");
-            
+            if (Config.TryLoad(out Config) && !Config.IsDefault())
+                Log($"Config successfully loaded.");
+            else 
+            {
+                Log("It appears you have a default configuration, or it's your first time using the program.");
+                Log($"Please setup your {Config.CONFIG_PATH} file. Instructions can be found in the readme.");
+                Console.Write("Press any key to exit.");
+                Console.ReadKey();
+                return;
+            }
+
             Log("Attempting to read offices config...");
             Offices = Config.LoadOffices();
             Log($"Successfully loaded {Offices.Count} offices.");
@@ -49,12 +57,15 @@ public class Program
                         officeList += i + ", ";
                     }
                     else
-                        Log($"WARNING: No office found by the shortname {i}. You might need to configure offices for your location.");
+                        Log($"WARNING: No office found by the shortname {i}. You might need to configure offices for your location.", LogLevel.Warning);
                 }
 
                 if (queryOffices.Count <= 0)
                 {
-                    Log("We found office data in the configuration file, but none you listed were found.");
+                    Log(Config.OfficesToQuery.Length <= 0
+                        ? "You haven't entered any offices to query."
+                        : "We found office data in the configuration file, but none you listed were found.", LogLevel.Error);
+
                     Log($"The following offices were found in the configuration: {Offices.Values.Select(x => x.ShortName).MakeListString(", ")}.");
                     Log($"If you cannot find your office above, it is recommended to enter office configuration mode to correct this.");
                     Log($"However, if it is present, check your office list for typos.");
@@ -62,7 +73,7 @@ public class Program
 
                     if (!extractOffices)
                     {
-                        Log("Going to exit in 5 seconds. Ensure you correct your configuration.");
+                        Log("Going to exit in 5 seconds. Ensure you correct your configuration.", LogLevel.Error);
                         await Task.Delay(5000);
                         return;
                     }
@@ -132,11 +143,6 @@ public class Program
                     
                 string verificationToken = auth.Item2;
 
-                if (String.IsNullOrWhiteSpace(verificationToken))
-                    Log("WARNING: Verification token is empty! Will likely mean program will not work.");
-                else
-                    Log($"Extracted verification token: {verificationToken}");
-
                 bool looping = true;
                 if (extractOffices)
                 {
@@ -184,12 +190,12 @@ public class Program
                                 officeQuerySuccess = true;
                                 break;
                             case 2:
-                                Log("You might have entered something wrong. Please try again.");
+                                Log("You might have entered something wrong. Please try again.", LogLevel.Error);
                                 break;
                             default:
                                 looping = false;
                                 retryAttempts++;
-                                Log($"Invalid response [code: {officeResponseRaw.Response}]. Resetting. (Attempt {retryAttempts}/{Config.MaxRetryAttempts}).");
+                                Log($"Invalid response [code: {officeResponseRaw.Response}]. Resetting. (Attempt {retryAttempts}/{Config.MaxRetryAttempts}).", LogLevel.Error);
                                 break;
                         }
 
@@ -221,7 +227,7 @@ public class Program
                         if (string.IsNullOrWhiteSpace(officesJson))
                         {
                             Log(
-                                "ERROR: Couldn't find office data in the received response. You might've entered something incorrect.");
+                                "ERROR: Couldn't find office data in the received response. You might've entered something incorrect.", LogLevel.Error);
                             continue;
                         }
 
@@ -229,7 +235,7 @@ public class Program
                         if (extractedOffices == null)
                         {
                             Log(
-                                "ERROR: Couldn't parse office JSON. Was the correct string extracted?");
+                                "ERROR: Couldn't parse office JSON. Was the correct string extracted?", LogLevel.Error);
                             Log("RAW JSON: " + officesJson);
                             continue;
                         }
@@ -239,17 +245,16 @@ public class Program
 
                         if (extractOffices)
                         {
-                            Log("Make sure you entered the correct longitude, latitude, and postcode. Retrying.");
+                            Log("Make sure you entered the correct longitude, latitude, and postcode. Retrying.", LogLevel.Error);
                             continue;
                         }
                             
                         Log("Saving offices to configuration file...");
                         Config.SaveOffices(extractedOffices);
                         Log("Offices saved successfully.");
-
-                        retryAttempts = Config.MaxRetryAttempts;
                         Console.Write("Press any key to exit. Offices will load on next start.");
                         Console.ReadKey();
+                        return;
                     }
                 }
                 
@@ -300,7 +305,7 @@ public class Program
                                 break;
                             default:
                                 retryAttempts++;
-                                Log($"Invalid response [code: {apptsRaw.Response}]. Resetting. (Attempt {retryAttempts}/{Config.MaxRetryAttempts}).");
+                                Log($"Invalid response [code: {apptsRaw.Response}]. Resetting. (Attempt {retryAttempts}/{Config.MaxRetryAttempts}).", LogLevel.Error);
                                 looping = false;
                                 useRetryDelay = true;
                                 break;
@@ -356,7 +361,7 @@ public class Program
                             if (goodApptFound)
                             {
                                 Log($"Found {outputs.Count} viable appointment(s) for {office.Item2} on " +
-                                    dateTime.ToString("D"));
+                                    dateTime.ToString("D"), LogLevel.Success);
                                 foreach (var i in outputs)
                                     Log(i);
                             }
@@ -414,7 +419,7 @@ public class Program
         if (String.IsNullOrWhiteSpace(ttyghss))
             Log("WARNING: TtyghsS is empty! Will likely mean program will not work.");
         else
-            Log($"Extracted TtyghsS: {ttyghss}");
+            Log($"Extracted TtyghsS: {ttyghss}", LogLevel.Success);
 
         var verifyValues = new Dictionary<string, string>
         {
@@ -462,6 +467,11 @@ public class Program
             }
         }
         
+        if (String.IsNullOrWhiteSpace(verificationToken))
+            Log("ERROR: Verification token is empty! Will likely mean program will not work.", LogLevel.Error);
+        else
+            Log($"Extracted verification token: {verificationToken}", LogLevel.Success);
+        
         var changeApptValues = new Dictionary<string, string>
         {
             {"VerificationToken", verificationToken},
@@ -505,12 +515,31 @@ public class Program
         }
     }
 
-    public static void Log(string msg)
+    public static void Log(string msg, LogLevel level = LogLevel.Info)
     {
         string logMessage = $"[{DateTime.Now.ToString("s")}] {msg}";
+
+        switch (level)
+        {
+            case LogLevel.Success:
+                Console.ForegroundColor = ConsoleColor.Green;
+                break;
+            case LogLevel.Warning:
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                break;
+            case LogLevel.Error:
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                break;
+            case LogLevel.Critical:
+                Console.BackgroundColor = ConsoleColor.Red;
+                break;
+        }
+        
         Console.WriteLine(logMessage);
         if (Config != null && !String.IsNullOrWhiteSpace(Config.LogFilePath))
             File.AppendAllText(Config.LogFilePath, logMessage + "\n");
+
+        Console.ResetColor();
     }
     
     static DateTime UnixTimeStampToDateTime(string unixTimeStamp)

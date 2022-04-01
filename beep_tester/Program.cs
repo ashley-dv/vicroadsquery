@@ -15,11 +15,16 @@ Console.WriteLine($"Alert Beep Configuration: {alertBeep.Repeats}x {alertBeep.Bu
 Console.WriteLine("Use this program to test audibility of the beep tones.");
 Console.Write("Enter the amount of time in seconds to wait before playing tones: ");
 
-float waitSecs = float.Parse(Console.ReadLine() ?? string.Empty);
-int waitMs = (int)(waitSecs * 1000);
-
-Console.WriteLine("Going to wait " + waitSecs + " seconds...");
-await Task.Delay(waitMs);
+var input = Console.ReadLine();
+float waitSecs = 0;
+if (!float.TryParse(input, out waitSecs))
+    Console.WriteLine("Nothing or invalid float entered, playing immediately.");
+else
+{
+    int waitMs = (int)(waitSecs * 1000);
+    Console.WriteLine("Going to wait " + waitSecs + " seconds...");
+    await Task.Delay(waitMs); 
+}
 
 Console.WriteLine("Now playing warning tone. You will only hear this when VicRoadsQuery is about to shut down.");
 await DoAlert(cfg.WarningBeep);

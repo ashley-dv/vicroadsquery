@@ -1,3 +1,5 @@
+using System.Data;
+
 namespace vicroadsquery;
 
 using System;
@@ -25,17 +27,48 @@ public class Config
 
     public string[] OfficesToQuery = Array.Empty<string>();
 
-    public BeepInfo AlertBeep = new BeepInfo(5, 1500, 50, 3, 500, 0);
+    public BeepInfo AlertBeep = new BeepInfo(5, 2500, 75, 3, 500, 0);
     public BeepInfo WarningBeep = new BeepInfo(5, 250, 600, 1, 100, 0);
 
-    private static Config GetDefaults()
+    public static Config GetDefaults()
     {
         return new Config();
     }
 
+    public bool IsDefault()
+    {
+        var comparison = GetDefaults();
+        return LicenseNumber == comparison.LicenseNumber
+               && LastName == comparison.LastName;
+    }
+
+    public static bool TryLoad(out Config cfg)
+    {
+        cfg = GetDefaults();
+
+        if (!File.Exists(CONFIG_PATH))
+            File.WriteAllText(CONFIG_PATH, JsonConvert.SerializeObject(cfg, Formatting.Indented));
+        else
+        {
+            try
+            {
+                var file = File.ReadAllText(CONFIG_PATH);
+                var jsonCfg = JsonConvert.DeserializeObject<Config>(file);
+                cfg = jsonCfg?? cfg;
+                return jsonCfg != null;
+            }
+            catch (Exception ex)
+            {
+                // Error parsing config - defaults will be used.
+            }
+        }
+
+        return false;
+    }
+    
     public static Config Load()
     {
-        Config cfg = GetDefaults();
+        var cfg = GetDefaults();
 
         if (!File.Exists(CONFIG_PATH))
             File.WriteAllText(CONFIG_PATH, JsonConvert.SerializeObject(cfg, Formatting.Indented));
@@ -61,7 +94,7 @@ public class Config
 
         if (!File.Exists(OFFICES_CONFIG_PATH))
         {
-            File.Create(OFFICES_CONFIG_PATH);
+            File.WriteAllText(OFFICES_CONFIG_PATH, string.Empty);
             Program.Log("Offices file not found, creating one.");
         }
         else

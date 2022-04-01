@@ -1,5 +1,15 @@
 namespace vicroadsquery;
 
+public enum LogLevel
+{
+    
+    Info = 0,
+    Success = 1,
+    Warning = 2,
+    Error = 3,
+    Critical = 4
+}
+
 public class VicRoadsVerifyResponse
 {
     public int Response;
