@@ -114,7 +114,7 @@ public class Program
             client.DefaultRequestHeaders.Add("Host", "billing.vicroads.vic.gov.au");
             client.DefaultRequestHeaders.Add("Connection", "keep-alive");
             client.DefaultRequestHeaders.Add("Referrer",
-                "https://billing.vicroads.vic.gov.au/bookings/Appointment/LocationSearch");
+                "https://billing.vicroads.vic.gov.au/");
             client.DefaultRequestHeaders.Add("sec-ch-ua",
                 "\"Not A;Brand\";v=\"99\", \"Chromium\";v=\"99\", \"Google Chrome\";v=\"99\"");
             client.DefaultRequestHeaders.Add("sec-ch-ua-mobile", "?0");
@@ -417,9 +417,12 @@ public class Program
         }
 
         if (String.IsNullOrWhiteSpace(ttyghss))
-            Log("WARNING: TtyghsS is empty! Will likely mean program will not work.");
+            Log("ERROR: TtyghsS is empty! Will likely mean program will not work.", LogLevel.Error);
         else
             Log($"Extracted TtyghsS: {ttyghss}", LogLevel.Success);
+        
+        if (!Config.AlreadyBooked)
+            await AgreeToTerms(client, "0");
 
         var verifyValues = new Dictionary<string, string>
         {
@@ -428,6 +431,9 @@ public class Program
             {"familyNameOne", Config.LastName},
             {"TtyghsS", ttyghss}
         };
+        
+        if (!Config.AlreadyBooked)
+            verifyValues.Add("ClientIDPresent", "true");
 
         var verifyContent = new FormUrlEncodedContent(verifyValues);
         verifyContent.Headers.Clear();
@@ -435,22 +441,27 @@ public class Program
 
         Log("Sending details...");
         var verifyResponse = await client.PostAsync(
-            "https://billing.vicroads.vic.gov.au/bookings/Manage/Details",
+            Config.AlreadyBooked ? "https://billing.vicroads.vic.gov.au/bookings/Manage/Details" : 
+            "https://billing.vicroads.vic.gov.au/bookings/Appointment/ValidateClientForAppointment",
             verifyContent);
         var verifyResponseStr = verifyResponse.Content.ReadAsStringAsync().Result;
         var vicRoadsVerifyResponse = JsonConvert.DeserializeObject<VicRoadsVerifyResponse>(verifyResponseStr);
-        Log("Details response received.");
+        Log("Verification response received.");
+        
+        // FOR NON BOOKED: DO THIS REQUEST HERE -
+        // https://billing.vicroads.vic.gov.au/bookings/Probationary/TestSelection
 
         if (vicRoadsVerifyResponse == null || vicRoadsVerifyResponse.Response != 1)
         {
             // print errors, maybe beep
-            Log($"ERROR: Non successful response received.");
+            Log($"ERROR: Non successful response received.", LogLevel.Error);
             return (false, string.Empty);
         }
 
         Log("Getting Manage/Appointments to retrieve verification token...");
         var verificationTokenHtml =
-            await client.GetAsync("https://billing.vicroads.vic.gov.au/bookings/Manage/Appointments");
+            await client.GetAsync(Config.AlreadyBooked ? "https://billing.vicroads.vic.gov.au/bookings/Manage/Appointments"
+                : "https://billing.vicroads.vic.gov.au/bookings/Appointment/LocationSearch");
         var verificationTokenHtmlResponseLines =
             WebUtility.HtmlDecode(verificationTokenHtml.Content.ReadAsStringAsync().Result).Split("\n");
         string verificationToken = string.Empty;
@@ -482,26 +493,33 @@ public class Program
         changeApptContent.Headers.Clear();
         changeApptContent.Headers.Add("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         
-        // agree to terms and conditions - Appointment/AppointmentSearch won't work unless we do
         await client.PostAsync("https://billing.vicroads.vic.gov.au/bookings/Manage/ChangeAppointment",
             changeApptContent);
+
+        if (Config.AlreadyBooked)
+            await AgreeToTerms(client, verificationToken);
         
+        return (true, verificationToken);
+    }
+
+    static async Task AgreeToTerms(HttpClient client, string verificationToken)
+    {
         var termsAgreeValues = new Dictionary<string, string>
         {
             {"VerificationTokenForm", verificationToken},
             {"blank", "True"},
             {"Submit", "Continue"}
         };
-        
+
         var termsAgreeContent = new FormUrlEncodedContent(termsAgreeValues);
         termsAgreeContent.Headers.Clear();
         termsAgreeContent.Headers.Add("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-        
-        // agree to terms and conditions - Appointment/AppointmentSearch won't work unless we do
-        await client.PostAsync("https://billing.vicroads.vic.gov.au/bookings/Transfer/TermsAndConditions",
-            termsAgreeContent);
 
-        return (true, verificationToken);
+        await client.PostAsync(
+            Config.AlreadyBooked
+                ? "https://billing.vicroads.vic.gov.au/bookings/Transfer/TermsAndConditions"
+                : "https://billing.vicroads.vic.gov.au/bookings/Probationary/TermsAndConditions",
+            termsAgreeContent);
     }
 
     static async Task UpdateTitleLoop()

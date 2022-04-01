@@ -16,6 +16,7 @@ public class Config
     public int RetryDelayMs = 5000;
     public int MaxRetryAttempts = 5;
     public bool PrintResponseSummaries = false;
+    public bool AlreadyBooked = false;
     public string LicenseNumber = "012345678";
     public string LastName = "LE SMITH";
 
