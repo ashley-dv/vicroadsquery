@@ -25,8 +25,8 @@ public class Config
 
     public string[] OfficesToQuery = Array.Empty<string>();
 
-    public BeepInfo AlertBeep = new BeepInfo(5, 1500, 50, 3, 250, 0);
-    public BeepInfo WarningBeep = new BeepInfo(5, 500, 250, 1, 100, 0);
+    public BeepInfo AlertBeep = new BeepInfo(5, 1500, 50, 3, 500, 0);
+    public BeepInfo WarningBeep = new BeepInfo(5, 250, 600, 1, 100, 0);
 
     private static Config GetDefaults()
     {

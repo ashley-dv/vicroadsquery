@@ -11,4 +11,8 @@
       <OutputPath>..\bin\</OutputPath>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\vicroadsquery\vicroadsquery.csproj" />
+    </ItemGroup>
+
 </Project>

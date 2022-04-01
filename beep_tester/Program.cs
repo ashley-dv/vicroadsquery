@@ -1,4 +1,18 @@
-﻿Console.WriteLine("Use this program to test audibility of the beep tones.");
+﻿using vicroadsquery;
+
+var cfg = Config.Load();
+
+Console.WriteLine($"Using beep configuration from {Config.CONFIG_PATH}.");
+
+var warnBeep = cfg.WarningBeep;
+var alertBeep = cfg.AlertBeep;
+
+Console.WriteLine($"Warning Beep Configuration: {warnBeep.Repeats}x {warnBeep.Burst} beep(s) at {warnBeep.Frequency}Hz " +
+                  $"for {warnBeep.DurationMs}ms each, with {warnBeep.BurstDelayMs} between burst beeps and {warnBeep.RepeatDelayMs} between bursts.");
+Console.WriteLine($"Alert Beep Configuration: {alertBeep.Repeats}x {alertBeep.Burst} beep(s) at {alertBeep.Frequency}Hz " +
+                  $"for {alertBeep.DurationMs}ms each, with {alertBeep.BurstDelayMs} between burst beeps and {alertBeep.RepeatDelayMs} between bursts.");
+
+Console.WriteLine("Use this program to test audibility of the beep tones.");
 Console.Write("Enter the amount of time in seconds to wait before playing tones: ");
 
 float waitSecs = float.Parse(Console.ReadLine() ?? string.Empty);
@@ -8,28 +22,22 @@ Console.WriteLine("Going to wait " + waitSecs + " seconds...");
 await Task.Delay(waitMs);
 
 Console.WriteLine("Now playing warning tone. You will only hear this when VicRoadsQuery is about to shut down.");
-await DoWarningAlert();
+await DoAlert(cfg.WarningBeep);
 Console.WriteLine("Now playing alert tone. You will only hear this when a viable appointment is found.");
-await DoSuccessAlert();
+await DoAlert(cfg.AlertBeep);
 Console.Write("Press any key to exit.");
 Console.ReadKey();
 
-static async Task DoWarningAlert()
+static async Task DoAlert(BeepInfo info)
 {
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < info.Repeats; i++)
     {
-        Console.Beep(250, 600);
-        await Task.Delay(100);
-    }
-}
+        for (int j = 0; j < info.Burst; j++)
+        {
+            Console.Beep(info.Frequency, info.DurationMs);
+            await Task.Delay(info.BurstDelayMs);
+        }
 
-static async Task DoSuccessAlert()
-{
-    for (int i = 0; i < 5; i++)
-    {
-        for (int j = 0; j < 3; j++)
-            Console.Beep(1500, 50);
-
-        await Task.Delay(500);
+        await Task.Delay(info.RepeatDelayMs);
     }
 }
