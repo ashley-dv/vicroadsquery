@@ -11,7 +11,9 @@ Hey, this is just a little program I wrote to track VicRoads appointments, becau
 Don't be surprised if this stops working, and I probably won't update it after I'm done with it.
 
 ## CONFIGURING OFFICES (vicroads.config.offices.json)
-1. Go to the [VicRoads booking site](https://billing.vicroads.vic.gov.au/bookings/Manage/Details).
+
+#### If you've already booked
+1. Go to the [VicRoads booking management site](https://billing.vicroads.vic.gov.au/bookings/Manage/Details).
 2. Enter all your details, and get to the section where you select the appointment day/time.
 3. In this section, right click on the 'Step 3 of 4' text, and open Inspect Element.
 4. A few lines below the element which opens and is selected, find the element with the id="Offices" and name="Offices" tags.
@@ -19,6 +21,10 @@ Don't be surprised if this stops working, and I probably won't update it after I
 6. Double click on that text and copy it.
 7. Delete any text in vicroads.config.offices.json, and paste the text you just copied.
 8. Done!
+
+#### If you haven't booked
+To be filled out once I find someone with a learner permit
+
 
 ## CONFIG OPTIONS (vicroadsquery.config.json)
 

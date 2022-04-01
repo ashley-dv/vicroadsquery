@@ -1,5 +1,3 @@
-using System.Reflection.Metadata.Ecma335;
-
 namespace vicroadsquery;
 
 using System;
@@ -64,7 +62,7 @@ public class Config
         if (!File.Exists(OFFICES_CONFIG_PATH))
         {
             File.Create(OFFICES_CONFIG_PATH);
-            Program.Log("Offices file not found. Please extract the offices from the VicRoads website.");
+            Program.Log("Offices file not found, creating one.");
         }
         else
         {
@@ -89,5 +87,10 @@ public class Config
     public static void Save(Config config)
     {
         File.WriteAllText(CONFIG_PATH, JsonConvert.SerializeObject(config, Formatting.Indented));
+    }
+    
+    public static void SaveOffices(VicRoadsOffice[] offices)
+    {
+        File.WriteAllText(OFFICES_CONFIG_PATH, JsonConvert.SerializeObject(offices, Formatting.Indented));
     }
 }
